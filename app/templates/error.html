@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Error - Email AI Agent{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                <h4>Something went wrong</h4>
+                <p class="text-muted">{{ error }}</p>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">
+                    <i class="fas fa-home me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

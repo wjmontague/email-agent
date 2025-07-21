@@ -1,0 +1,205 @@
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Enhanced Reports page loaded successfully');
+    
+    // Volume Chart Setup
+    {% if daily_volumes %}
+    const volumeCtx = document.getElementById('volumeChart');
+    if (volumeCtx) {
+        // Prepare data for Chart.js
+        const volumeData = [
+            {% for volume in daily_volumes %}
+            {
+                date: '{{ volume.date }}',
+                count: {{ volume.count }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+
+        // Sort by date and prepare labels/data arrays
+        volumeData.sort((a, b) => new Date(a.date) - new Date(b.date));
+        const labels = volumeData.map(item => {
+            const date = new Date(item.date);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+        const counts = volumeData.map(item => item.count);
+
+        // Create the chart
+        new Chart(volumeCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Emails per Day',
+                    data: counts,
+                    borderColor: '#17a2b8',
+                    backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#17a2b8',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff',
+                        borderColor: '#17a2b8',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.parsed.y} emails`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            callback: function(value) {
+                                return Number.isInteger(value) ? value : '';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
+            }
+        });
+
+        // Set chart container height
+        volumeCtx.style.height = '300px';
+    }
+    {% endif %}
+    
+    // Process New Emails Button
+    const processNewBtn = document.getElementById('processNewBtn');
+    if (processNewBtn) {
+        processNewBtn.addEventListener('click', function() {
+            console.log('Processing new emails...');
+            const btn = this;
+            const originalText = btn.innerHTML;
+            
+            // Show loading state
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing...';
+            btn.disabled = true;
+            
+            // Make API call - FIXED: Added /api prefix
+            fetch('/api/process_emails', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                console.log('Response received:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Data received:', data);
+                if (data.status === 'processing_completed') {
+                    alert('✅ Success!\n\nProcessed: ' + data.processed + ' emails\nNew: ' + data.new + ' emails\n\nPage will refresh...');
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 2000);
+                } else if (data.status === 'error') {
+                    alert('❌ Error: ' + data.message);
+                } else {
+                    alert('⚠ Unexpected response: ' + JSON.stringify(data));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Network error: ' + error.message);
+            })
+            .finally(function() {
+                // Reset button
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        });
+    }
+
+    // Process Historical Emails Button
+    const processHistoricalBtn = document.getElementById('processHistoricalBtn');
+    if (processHistoricalBtn) {
+        processHistoricalBtn.addEventListener('click', function() {
+            if (this.disabled) return;
+            
+            if (!confirm('Process emails from the last 2 months?\n\nThis may take 5-10 minutes for large inboxes.')) {
+                return;
+            }
+            
+            console.log('Processing historical emails...');
+            const btn = this;
+            const originalText = btn.innerHTML;
+            
+            // Show loading state
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing 2 months...';
+            btn.disabled = true;
+            
+            // Make API call - FIXED: Added /api prefix
+            fetch('/api/process_emails_historical', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                console.log('Historical response received:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Historical data received:', data);
+                if (data.status === 'processing_started') {
+                    alert('📧 Historical processing started!\n\nThis will take several minutes.\nPage will refresh automatically when complete.');
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 300000); // 5 minutes
+                } else if (data.status === 'already_processing') {
+                    alert('⚠ Email processing is already in progress.');
+                } else if (data.status === 'error') {
+                    alert('❌ Error: ' + data.message);
+                } else {
+                    alert('⚠ Response: ' + JSON.stringify(data));
+                }
+            })
+            .catch(error => {
+                console.error('Historical error:', error);
+                alert('❌ Error: ' + error.message);
+            })
+            .finally(function() {
+                // Reset button
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        });
+    }
+});
+</script>

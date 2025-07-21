@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Reports - Email AI Agent{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2><i class="fas fa-chart-bar me-2"></i>Email Analytics & Reports</h2>
+            <p class="text-muted">Comprehensive analysis of your email processing and performance metrics</p>
+        </div>
+    </div>
+
+    <!-- Calculate totals once for all components -->
+    {% if priority_stats %}
+        {% set total_emails = priority_stats|sum(attribute='count') %}
+        {% set ns = namespace(critical=0, high=0) %}
+        {% for stat in priority_stats %}
+            {% if stat.priority == 'Critical' %}
+                {% set ns.critical = stat.count %}
+            {% elif stat.priority == 'High' %}
+                {% set ns.high = stat.count %}
+            {% endif %}
+        {% endfor %}
+        {% set critical_high_total = ns.critical + ns.high %}
+    {% else %}
+        {% set total_emails = 0 %}
+        {% set ns = namespace(critical=0, high=0) %}
+        {% set critical_high_total = 0 %}
+    {% endif %}
+
+    <!-- Summary Cards Section -->
+    {% include 'reports/summary_cards.html' %}
+
+    <!-- Email Processing Controls Section -->
+    {% include 'reports/processing_controls.html' %}
+
+    <!-- Volume Chart Section -->
+    {% include 'reports/volume_chart.html' %}
+
+    <!-- Category and Priority Tables Section -->
+    {% include 'reports/analytics_tables.html' %}
+
+    <!-- Performance Insights Section -->
+    {% include 'reports/insights_section.html' %}
+</div>
+
+<!-- Shared styles for all report components -->
+<style>
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+.stats-card:hover {
+    transform: translateY(-5px);
+}
+.processing-card {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+}
+.category-row:nth-child(even) {
+    background-color: #f8f9fa;
+}
+.priority-critical { color: #dc3545; font-weight: bold; }
+.priority-high { color: #fd7e14; font-weight: bold; }
+.priority-medium { color: #0dcaf0; font-weight: bold; }
+.priority-low { color: #6c757d; }
+</style>
+
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Include JavaScript components -->
+{% include 'reports/reports_js.html' %}
+{% endblock %}

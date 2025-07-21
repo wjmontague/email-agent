@@ -1,0 +1,43 @@
+<!-- Summary Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="h3 mb-1">
+                {{ category_stats|length if category_stats else 'N/A' }}
+            </div>
+            <div>Total Categories</div>
+            <small class="opacity-75">Email classification</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="h3 mb-1">
+                {{ total_emails }}
+            </div>
+            <div>Total Emails</div>
+            <small class="opacity-75">All processed</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="h3 mb-1">
+                {{ critical_high_total }}
+            </div>
+            <div>Critical/High</div>
+            <small class="opacity-75">Requiring attention</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="h3 mb-1">
+                {% if total_emails > 0 %}
+                    {{ ((total_emails - critical_high_total) / total_emails * 100)|round|int }}%
+                {% else %}
+                    N/A
+                {% endif %}
+            </div>
+            <div>Auto-Handled</div>
+            <small class="opacity-75">Non-critical emails</small>
+        </div>
+    </div>
+</div>

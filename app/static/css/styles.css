@@ -1,0 +1,102 @@
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f8f9fa;
+    margin: 0;
+    padding: 0;
+}
+.navbar {
+    background: #333;
+    color: #fff;
+    padding: 1rem;
+}
+.container {
+    margin: 2rem auto;
+    max-width: 1200px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+    padding: 2rem;
+}
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.search-bar {
+    width: 320px;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 1.1rem;
+}
+.dashboard-meta {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+.notif-icon {
+    position: relative;
+    font-size: 1.5rem;
+}
+.notif-badge {
+    background: #d9534f;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 0.8rem;
+    padding: 2px 6px;
+    position: absolute;
+    top: -8px;
+    right: -12px;
+}
+.dashboard-date {
+    font-size: 1.1rem;
+    color: #666;
+}
+.stats-row {
+    display: flex;
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+.stat-card {
+    flex: 1;
+    background: #f4f6fb;
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.stat-card.blue { background: #e6f0fa; color: #1a4a7a; }
+.stat-card.yellow { background: #fffbe6; color: #b38f00; }
+.stat-card.red { background: #ffeaea; color: #d9534f; }
+.stat-card.green { background: #e6fae6; color: #2e7d32; }
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+.stat-label {
+    font-size: 1.1rem;
+    margin-top: 0.5rem;
+}
+.dashboard-section {
+    display: flex;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+.dashboard-panel {
+    flex: 1;
+    background: #f4f6fb;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+}
+.diagram-img {
+    width: 100%;
+    max-width: 400px;
+    margin-top: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.subtitle {
+    color: #666;
+    margin-bottom: 1.5rem;
+}

@@ -1,0 +1,52 @@
+# Environment variables
+.env
+*.env
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Credentials and tokens
+credentials/
+tokens/
+*.json
+client_secret*.json
+token.json
+
+# Backup and temporary files
+backup_*/
+backups_*/
+*_backup*
+*.backup
+*.tmp
+
+# Logs
+*.log
+logs/
+
+# Attachments (may contain sensitive data)
+attachments/
+app/attachments/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

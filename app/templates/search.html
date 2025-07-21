@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Search Emails - Email AI Agent{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Search Emails</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <input type="text" class="form-control" name="q"
+                                   placeholder="Search in subject, content, or summary..."
+                                   value="{{ query }}">
+                        </div>
+                        <div class="col-md-4">
+                            <select name="category" class="form-select">
+                                <option value="">All Categories</option>
+                                <option value="Critical Alerts" {{ 'selected' if category == 'Critical Alerts' }}>Critical Alerts</option>
+                                <option value="New Leads" {{ 'selected' if category == 'New Leads' }}>New Leads</option>
+                                <option value="Maintenance Requests" {{ 'selected' if category == 'Maintenance Requests' }}>Maintenance Requests</option>
+                                <option value="Offers & Contracts" {{ 'selected' if category == 'Offers & Contracts' }}>Offers & Contracts</option>
+                                <option value="Tenant Communications" {{ 'selected' if category == 'Tenant Communications' }}>Tenant Communications</option>
+                                <option value="Vendor Communications" {{ 'selected' if category == 'Vendor Communications' }}>Vendor Communications</option>
+                                <option value="Legal & Compliance" {{ 'selected' if category == 'Legal & Compliance' }}>Legal & Compliance</option>
+                                <option value="Marketing & Listings" {{ 'selected' if category == 'Marketing & Listings' }}>Marketing & Listings</option>
+                                <option value="Financial" {{ 'selected' if category == 'Financial' }}>Financial</option>
+                                <option value="General" {{ 'selected' if category == 'General' }}>General</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i>Search
+                            </button>
+                            <a href="{{ url_for('main.search_emails') }}" class="btn btn-outline-secondary ms-2">Clear</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if query %}
+<div class="mt-4">
+    <h5>Search Results for "{{ query }}"</h5>
+    {% if emails %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Priority</th>
+                    <th>From</th>
+                    <th>Subject</th>
+                    <th>Category</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for classified, email in emails %}
+                <tr class="clickable-row {{ 'unread' if not classified.is_read }}" data-email-id="{{ email.id }}">
+                    <td>
+                        <span class="badge {{ classified.priority_badge }}">{{ classified.priority }}</span>
+                    </td>
+                    <td>
+                        <div>{{ email.sender_name or 'Unknown' }}</div>
+                        <small class="text-muted">{{ email.sender_email }}</small>
+                    </td>
+                    <td>
+                        <div>{{ email.subject }}</div>
+                        <small class="text-muted">{{ classified.summary[:50] }}...</small>
+                    </td>
+                    <td>{{ classified.category }}</td>
+                    <td>{{ email.received_at.strftime('%m/%d/%Y %H:%M') }}</td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{{ url_for('main.view_email', email_id=email.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="archiveEmail({{ email.id }})">
+                                <i class="fas fa-archive"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        No emails found matching your search criteria.
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<script>
+function archiveEmail(emailId) {
+    if (confirm('Are you sure you want to archive this email?')) {
+        fetch(`/archive/${emailId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error archiving email:', error);
+            alert('Error archiving email.');
+        });
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ category_name }} - Email AI Agent</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .email-row {
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .email-row:hover {
+            background-color: #f8f9fa;
+        }
+        .email-row.unread {
+            background-color: #fff3cd;
+            font-weight: 500;
+        }
+        .priority-critical {
+            border-left: 4px solid #dc3545;
+        }
+        .priority-high {
+            border-left: 4px solid #fd7e14;
+        }
+        .priority-medium {
+            border-left: 4px solid #0dcaf0;
+        }
+        .priority-low {
+            border-left: 4px solid #6c757d;
+        }
+        .badge-critical {
+            background-color: #dc3545;
+        }
+        .badge-high {
+            background-color: #fd7e14;
+        }
+        .badge-medium {
+            background-color: #0dcaf0;
+        }
+        .badge-low {
+            background-color: #6c757d;
+        }
+        .category-header {
+            background: linear-gradient(135deg, #495057, #6c757d);
+            color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        /* Attachment indicator styles */
+        .attachment-icon {
+            font-size: 0.9em;
+            opacity: 0.8;
+            transition: opacity 0.2s ease;
+        }
+        .attachment-icon:hover {
+            opacity: 1;
+            color: #0d6efd !important;
+        }
+        .email-row:hover .attachment-icon {
+            opacity: 1;
+        }
+        .tooltip-inner {
+            max-width: 300px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="/"
+                <i class="fas fa-envelope-open-text me-2"></i>
+                Email AI Agent
+            </a>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item">
+                        <a href="/"
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ category_name }}</li>
+                </ol>
+            </nav>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="category-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2 class="mb-1">
+                        {% if category_name == 'Critical Alerts' %}
+                            <i class="fas fa-exclamation-triangle me-2"
+                               title="Emergency situations requiring immediate attention"
+                               data-bs-placement="right"></i>
+                        {% elif category_name == 'New Leads' %}
+                            <i class="fas fa-user-plus me-2"
+                               title="Potential clients and property inquiries"
+                               data-bs-placement="right"></i>
+                        {% elif category_name == 'Maintenance Requests' %}
+                            <i class="fas fa-tools me-2"
+                               title="Property maintenance and repair requests"
+                               data-bs-placement="right"></i>
+                        {% elif category_name == 'Offers & Contracts' %}
+                            <i class="fas fa-file-contract me-2"
+                               title="Purchase offers, contracts, and legal documents"
+                               data-bs-placement="right"></i>
+                        {% elif category_name == 'Tenant Communications' %}
+                            <i class="fas fa-home me-2"
+                               title="Communications with current tenants"
+                               data-bs-placement="right"></i>
+                        {% else %}
+                            <i class="fas fa-inbox me-2"
+                               title="General correspondence and other emails"
+                               data-bs-placement="right"></i>
+                        {% endif %}
+                        {{ category_name }}
+                    </h2>
+                    <p class="mb-0">{{ category_stats.total }} emails • {{ category_stats.unread }} unread</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    {% for priority, count in category_stats.priority_counts.items() %}
+                        <span class="badge badge-{{ priority.lower() }} me-1"
+                              title="{{ priority }} priority: {{ count }} emails - {{ 'Requires immediate attention' if priority == 'Critical' else 'Important but not urgent' if priority == 'High' else 'Standard priority' if priority == 'Medium' else 'Low priority' }}"
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {% if emails %}btn-secondary
+            <div class="card">
+                <div class="card-header">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="mb-0">
+                                <i class="fas fa-list me-2"></i>
+                                Email List
+                            </h5>
+                        </div>
+                        <div class="col-auto">
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" onclick="markAllAsRead()"
+                                        title="Mark all unread emails in this category as read"
+                                    <i class="fas fa-eye me-1"></i>Mark All Read
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="refreshPage()"
+                                        title="Refresh this page to show latest emails"
+                                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th width="5%"></th>
+                                    <th width="10%">Priority</th>
+                                    <th width="20%">From</th>
+                                    <th width="35%">Subject</th>
+                                    <th width="20%">Summary</th>
+                                    <th width="10%">Date</th>
+                                    <th width="5%">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for classified, email in emails %}
+                                    <tr class="email-row priority-{{ classified.priority.lower() }} {{ 'unread' if not classified.is_read }}"
+                                        onclick="viewEmail({{ email.id }})" data-email-id="{{ email.id }}"
+                                        title="Click to view full email details"
+                                        data-bs-placement="left">
+                                        <td>
+                                            {% if not classified.is_read %}
+                                                <i class="fas fa-circle text-primary"
+                                                   title="This email has not been read yet"
+                                                   data-bs-placement="right"></i>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{{ classified.priority.lower() }}"
+                                                  title="Priority: {{ classified.priority }} - {{ 'Requires immediate attention' if classified.priority == 'Critical' else 'Important but not urgent' if classified.priority == 'High' else 'Standard priority' if classified.priority == 'Medium' else 'Low priority' }}"
+                                                  data-bs-placement="top">
+                                                {{ classified.priority }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold">
+                                                <a href="/client/{{ email.sender_email }}" class="text-decoration-none"
+                                                   title="View all conversations with {{ email.sender_name or 'this client' }}"
+                                                   data-bs-placement="top">
+                                                    {{ email.sender_name or 'Unknown' }}
+                                                </a>
+                                            </div>
+                                            <small class="text-muted">{{ email.sender_email[:25] }}{% if email.sender_email|length > 25 %}...{% endif %}</small>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold">{{ email.subject[:60] }}{% if email.subject|length > 60 %}...{% endif %}
+                                                <!-- PAPERCLIP INDICATOR -->
+                                                {% if email.get_attachments() %}
+                                                    <i class="fas fa-paperclip ms-2 text-primary attachment-icon"
+                                                       title="{{ email.get_attachments()|length }} attachment(s): {% for att in email.get_attachments() %}{{ att.filename }}{% if not loop.last %}, {% endif %}{% endfor %}"
+                                                       data-bs-placement="top"></i>
+                                                {% endif %}
+                                            </div>
+                                            {% if classified.requires_action %}
+                                                <small class="text-warning">
+                                                    <i class="fas fa-exclamation-circle me-1"
+                                                       title="This email requires follow-up action from you"
+                                                       data-bs-placement="top"></i>Action Required
+                                                </small>
+                                            {% endif %}
+                                            <!-- ATTACHMENT COUNT BELOW SUBJECT -->
+                                            {% if email.get_attachments() %}
+                                                <br><small class="text-primary">
+                                                    <i class="fas fa-paperclip me-1"></i>{{ email.get_attachments()|length }} file{{ 's' if email.get_attachments()|length != 1 else '' }}
+                                                </small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ classified.summary[:80] }}{% if classified.summary|length > 80 %}...{% endif %}</small>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                {{ email.received_at.strftime('%m/%d/%y') }}<br>
+                                                {{ email.received_at.strftime('%H:%M') }}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                {% if not classified.is_read %}
+                                                    <button class="btn btn-outline-primary btn-sm"
+                                                            onclick="event.stopPropagation(); markAsRead({{ email.id }})"
+                                                            title="Mark this email as read"
+                                                            data-bs-placement="top">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                {% endif %}
+                                                <button class="btn btn-outline-secondary btn-sm"
+                                                        onclick="event.stopPropagation(); archiveEmail({{ email.id }})"
+                                                        title="Archive this email (move to archived folder)"
+                                                        data-bs-placement="top">
+                                                    <i class="fas fa-archive"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No {{ category_name.lower() }} found</h4>
+                <p class="text-muted">This category is currently empty.</p>
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        {% endif %}
+
+        <div class="mt-4">
+                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+            </a>
+            {% if emails %}
+                <span class="ms-3 text-muted">{{ emails|length }} emails displayed</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize Bootstrap tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    html: true,
+                    placement: 'auto'
+                });
+            });
+        });
+
+        function viewEmail(emailId) {
+            window.location.href = `/email/${emailId}`;
+        }
+
+        function markAsRead(emailId) {
+            fetch(`/mark_read/${emailId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const row = document.querySelector(`tr[data-email-id="${emailId}"]`);
+                    if (row) {
+                        row.classList.remove('unread');
+                        const unreadIcon = row.querySelector('.fa-circle');
+                        if (unreadIcon) {
+                            unreadIcon.remove();
+                        }
+                        const markReadBtn = row.querySelector('.fa-eye').closest('button');
+                        if (markReadBtn) {
+                            markReadBtn.remove();
+                        }
+                    }
+                }
+            })
+            .catch(error => console.error('Error marking as read:', error));
+        }
+
+        function archiveEmail(emailId) {
+            if (confirm('Are you sure you want to archive this email?')) {
+                fetch(`/archive/${emailId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const row = document.querySelector(`tr[data-email-id="${emailId}"]`);
+                        if (row) {
+                            row.style.opacity = '0.5';
+                            setTimeout(() => {
+                                row.remove();
+                                const remainingRows = document.querySelectorAll('.email-row').length;
+                                if (remainingRows === 0) {
+                                    location.reload();
+                                }
+                            }, 500);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error archiving email:', error);
+                    alert('Error archiving email.');
+                });
+            }
+        }
+
+        function markAllAsRead() {
+            const unreadRows = document.querySelectorAll('.email-row.unread');
+            if (unreadRows.length === 0) {
+                alert('No unread emails to mark as read.');
+                return;
+            }
+            if (confirm(`Mark all ${unreadRows.length} unread emails as read?`)) {
+                unreadRows.forEach(row => {
+                    const emailId = row.dataset.emailId;
+                    markAsRead(emailId);
+                });
+            }
+        }
+
+        function refreshPage() {
+            location.reload();
+        }
+    </script>
+</body>
+</html>

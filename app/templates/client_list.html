@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}All Clients - Email AI Agent{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="fas fa-users me-2"></i>Client Conversations</h2>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    All Client Conversations
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Client</th>
+                                <th>Status</th>
+                                <th>Category</th>
+                                <th>Emails</th>
+                                <th>Unread</th>
+                                <th>Last Contact</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for client in clients %}
+                            <tr class="clickable-row" onclick="window.location.href='/client/{{ client.email }}'">
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle me-3">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold">
+                                                {{ client.name }}
+                                                <!-- Attachment indicator -->
+                                                {% if client.attachment_count > 0 %}
+                                                <i class="fas fa-paperclip ms-2 text-primary"
+                                                   title="{{ client.attachment_count }} email(s) with attachments"
+                                                   data-bs-toggle="tooltip"
+                                                   data-bs-placement="top"></i>
+                                                {% endif %}
+                                            </div>
+                                            <small class="text-muted">{{ client.email }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if client.status == 'Active Lead' else 'info' }}">
+                                        {{ client.status }}
+                                    </span>
+                                </td>
+                                <td>{{ client.primary_category }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ client.email_count }}</span>
+                                    {% if client.attachment_count > 0 %}
+                                    <small class="text-muted d-block">
+                                        <i class="fas fa-paperclip me-1"></i>{{ client.attachment_count }} with files
+                                    </small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if client.unread_count > 0 %}
+                                    <span class="badge bg-warning">{{ client.unread_count }}</span>
+                                    {% else %}
+                                    <span class="text-muted">0</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ client.last_contact.strftime('%m/%d/%y %H:%M') }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="/client/{{ client.email }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-comments"></i>
+                                        </a>
+                                        <a href="/reply/{{ client.email }}" class="btn btn-outline-success btn-sm">
+                                            <i class="fas fa-reply"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+/* Style the paperclip icon */
+.fa-paperclip {
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+.fa-paperclip:hover {
+    opacity: 1;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap tooltips for attachment indicators
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+
+{% endblock %}

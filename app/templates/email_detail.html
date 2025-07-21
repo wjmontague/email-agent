@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block title %}{{ email.subject }} - Email AI Agent{% endblock %}
+{% block content %}
+<div class="row">
+<div class="col-md-8">
+<div class="card email-card">
+<div class="card-header d-flex justify-content-between align-items-center">
+<h5 class="mb-0">{{ email.subject }}</h5>
+<div>
+{% if classified %}
+<span class="badge {{ classified.priority_badge }} me-2">{{ classified.priority }}</span>
+<span class="badge bg-secondary">{{ classified.category }}</span>
+{% endif %}
+</div>
+</div>
+<div class="card-body">
+<div class="row mb-3">
+<div class="col-md-6">
+<strong>From:</strong> {{ email.sender_name }} &lt;{{ email.sender_email }}&gt;
+</div>
+<div class="col-md-6">
+<strong>Received:</strong> {{ email.received_at.strftime('%B %d, %Y at %I:%M %p') }}
+</div>
+</div>
+{% if classified and classified.summary %}
+<div class="alert alert-info">
+<strong>AI Summary:</strong> {{ classified.summary }}
+</div>
+{% endif %}
+
+<!-- NEW: Attachments Section -->
+{% if email.get_attachments() %}
+<div class="alert alert-light border-start border-primary border-4 mb-3">
+<div class="d-flex align-items-center mb-2">
+<i class="fas fa-paperclip me-2 text-primary"></i>
+<strong>{{ email.get_attachments()|length }} Attachment{{ 's' if email.get_attachments()|length != 1 else '' }}</strong>
+</div>
+{% for attachment in email.get_attachments() %}
+<div class="attachment-item d-flex align-items-center justify-content-between mb-2 p-2 bg-white border rounded">
+<div class="d-flex align-items-center">
+{% set file_ext = attachment.filename.split('.')[-1].lower() %}
+{% if file_ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp'] %}
+<i class="fas fa-image me-2 text-success"></i>
+{% elif file_ext in ['pdf'] %}
+<i class="fas fa-file-pdf me-2 text-danger"></i>
+{% elif file_ext in ['doc', 'docx'] %}
+<i class="fas fa-file-word me-2 text-primary"></i>
+{% elif file_ext in ['xls', 'xlsx'] %}
+<i class="fas fa-file-excel me-2 text-success"></i>
+{% elif file_ext in ['mp3', 'wav', 'mp4', 'avi'] %}
+<i class="fas fa-file-audio me-2 text-warning"></i>
+{% elif file_ext in ['zip', 'rar', '7z'] %}
+<i class="fas fa-file-archive me-2 text-secondary"></i>
+{% else %}
+<i class="fas fa-file me-2 text-muted"></i>
+{% endif %}
+<div>
+<strong>{{ attachment.filename }}</strong><br>
+<small class="text-muted">
+{{ attachment.mime_type }} •
+{% if attachment.size < 1024 %}
+{{ attachment.size }} bytes
+{% elif attachment.size < 1048576 %}
+{{ "%.1f"|format(attachment.size / 1024) }} KB
+{% else %}
+{{ "%.1f"|format(attachment.size / 1024 / 1024) }} MB
+{% endif %}
+</small>
+</div>
+</div>
+<a href="/attachment/{{ attachment.safe_filename }}"
+   class="btn btn-outline-primary btn-sm"
+   title="Download {{ attachment.filename }}"
+   data-bs-toggle="tooltip"
+   data-bs-placement="top">
+<i class="fas fa-download me-1"></i>Download
+</a>
+</div>
+{% endfor %}
+</div>
+{% endif %}
+<!-- END: Attachments Section -->
+
+<div class="email-body">
+<pre style="white-space: pre-wrap; font-family: inherit;">{{ email.body_cleaned }}</pre>
+</div>
+</div>
+<div class="card-footer">
+<div class="btn-group">
+<a href="/reply/{{ email.id }}" class="btn btn-success">
+<i class="fas fa-reply me-1"></i>Reply
+</a>
+{% if classified and not classified.is_read %}
+<button class="btn btn-primary" onclick="markAsRead({{ email.id }})">
+<i class="fas fa-eye me-1"></i>Mark as Read
+</button>
+{% endif %}
+<button class="btn btn-secondary" onclick="archiveEmail({{ email.id }})">
+<i class="fas fa-archive me-1"></i>Archive
+</button>
+<a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+<i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+</a>
+</div>
+</div>
+</div>
+</div>
+<div class="col-md-4">
+{% if classified %}
+<div class="card">
+<div class="card-header">
+<h6 class="mb-0">Email Details</h6>
+</div>
+<div class="card-body">
+<div class="mb-2">
+<strong>Category:</strong> {{ classified.category }}
+</div>
+{% if classified.sub_category %}
+<div class="mb-2">
+<strong>Sub-category:</strong> {{ classified.sub_category }}
+</div>
+{% endif %}
+<div class="mb-2">
+<strong>Priority:</strong>
+<span class="badge {{ classified.priority_badge }}">{{ classified.priority }}</span>
+</div>
+{% if classified.confidence_score %}
+<div class="mb-2">
+<strong>AI Confidence:</strong> {{ (classified.confidence_score * 100)|round }}%
+</div>
+{% endif %}
+{% if classified.requires_action %}
+<div class="mb-2">
+<span class="badge bg-warning">Action Required</span>
+</div>
+{% endif %}
+</div>
+</div>
+{% if classified.get_extracted_info() %}
+<div class="card mt-3">
+<div class="card-header">
+<h6 class="mb-0">Extracted Information</h6>
+</div>
+<div class="card-body">
+{% for key, value in classified.get_extracted_info().items() %}
+{% if value %}
+<div class="mb-2">
+<strong>{{ key|title|replace('_', ' ') }}:</strong> {{ value }}
+</div>
+{% endif %}
+{% endfor %}
+</div>
+</div>
+{% endif %}
+{% if classified.get_tags() %}
+<div class="card mt-3">
+<div class="card-header">
+<h6 class="mb-0">Tags</h6>
+</div>
+<div class="card-body">
+{% for tag in classified.get_tags() %}
+<span class="badge bg-light text-dark me-1">{{ tag }}</span>
+{% endfor %}
+</div>
+</div>
+{% endif %}
+{% endif %}
+</div>
+</div>
+
+<style>
+.attachment-item {
+    transition: all 0.2s ease;
+}
+.attachment-item:hover {
+    background-color: #f8f9fa !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+</style>
+
+<script>
+// Initialize Bootstrap tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
+function markAsRead(emailId) {
+    fetch(`/mark_read/${emailId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        }
+    })
+    .catch(error => console.error('Error marking as read:', error));
+}
+
+function archiveEmail(emailId) {
+    if (confirm('Are you sure you want to archive this email?')) {
+        fetch(`/archive/${emailId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.href = '/';
+            }
+        })
+        .catch(error => {
+            console.error('Error archiving email:', error);
+            alert('Error archiving email.');
+        });
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,142 @@
+<!-- Performance Insights -->
+{% if category_stats or priority_stats %}
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Key Insights & Recommendations
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        {% if critical_high_total > 0 %}
+                            <div class="alert alert-warning">
+                                <h6><i class="fas fa-exclamation-triangle me-2"></i>Priority Alert</h6>
+                                <p class="mb-1">
+                                    {% if ns.critical > 0 and ns.high > 0 %}
+                                        {{ ns.critical }} critical and {{ ns.high }} high priority emails pending
+                                    {% elif ns.critical > 0 %}
+                                        {{ ns.critical }} critical priority email{{ 's' if ns.critical != 1 else '' }} pending
+                                    {% else %}
+                                        {{ ns.high }} high priority email{{ 's' if ns.high != 1 else '' }} pending
+                                    {% endif %}
+                                </p>
+                                <small>
+                                    {% if ns.critical > 0 %}
+                                        Review critical items immediately
+                                    {% else %}
+                                        Review high priority items within 24 hours
+                                    {% endif %}
+                                </small>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-success">
+                                <h6><i class="fas fa-check-circle me-2"></i>All Clear</h6>
+                                <p class="mb-1">No critical or high priority items pending</p>
+                                <small>Email processing is up to date</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-chart-line me-2"></i>Processing Stats</h6>
+                            <p class="mb-1">{{ category_stats|length if category_stats else 0 }} categories active</p>
+                            <small>Email classification working normally</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert alert-primary">
+                            <h6><i class="fas fa-robot me-2"></i>AI Performance</h6>
+                            <p class="mb-1">Automated classification active</p>
+                            <small>AI processing your emails efficiently</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Insights Row -->
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        {% if total_emails > 0 %}
+                            {% set automation_rate = ((total_emails - critical_high_total) / total_emails * 100)|round|int %}
+                            {% if automation_rate >= 80 %}
+                                <div class="alert alert-success">
+                                    <h6><i class="fas fa-cogs me-2"></i>Automation Success</h6>
+                                    <p class="mb-1">{{ automation_rate }}% of emails handled automatically</p>
+                                    <small>Excellent automation efficiency</small>
+                                </div>
+                            {% elif automation_rate >= 60 %}
+                                <div class="alert alert-warning">
+                                    <h6><i class="fas fa-balance-scale me-2"></i>Moderate Automation</h6>
+                                    <p class="mb-1">{{ automation_rate }}% of emails handled automatically</p>
+                                    <small>Consider reviewing classification rules</small>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-danger">
+                                    <h6><i class="fas fa-exclamation-triangle me-2"></i>High Manual Load</h6>
+                                    <p class="mb-1">{{ automation_rate }}% of emails handled automatically</p>
+                                    <small>Many emails require manual attention</small>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="alert alert-secondary">
+                                <h6><i class="fas fa-info-circle me-2"></i>No Data</h6>
+                                <p class="mb-1">Process emails to see automation metrics</p>
+                                <small>System ready for email processing</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        {% if daily_volumes %}
+                            {% set recent_volume = daily_volumes[-1].count if daily_volumes else 0 %}
+                            {% if recent_volume > 10 %}
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-trending-up me-2"></i>High Activity</h6>
+                                    <p class="mb-1">{{ recent_volume }} emails processed recently</p>
+                                    <small>Active email management period</small>
+                                </div>
+                            {% elif recent_volume > 0 %}
+                                <div class="alert alert-secondary">
+                                    <h6><i class="fas fa-chart-line me-2"></i>Normal Activity</h6>
+                                    <p class="mb-1">{{ recent_volume }} emails processed recently</p>
+                                    <small>Standard processing volume</small>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-light">
+                                    <h6><i class="fas fa-pause-circle me-2"></i>Quiet Period</h6>
+                                    <p class="mb-1">Low recent email activity</p>
+                                    <small>System monitoring for new emails</small>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="alert alert-secondary">
+                                <h6><i class="fas fa-clock me-2"></i>Volume Tracking</h6>
+                                <p class="mb-1">Volume data will appear here</p>
+                                <small>Processing emails to build trends</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        {% if category_stats %}
+                            {% set top_category = category_stats|sort(attribute='count', reverse=true)|first %}
+                            <div class="alert alert-primary">
+                                <h6><i class="fas fa-trophy me-2"></i>Top Category</h6>
+                                <p class="mb-1">{{ top_category.category }}: {{ top_category.count }} emails</p>
+                                <small>Most active email category</small>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-secondary">
+                                <h6><i class="fas fa-folder-open me-2"></i>Category Insights</h6>
+                                <p class="mb-1">Category analysis will appear here</p>
+                                <small>Process emails to see category trends</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}

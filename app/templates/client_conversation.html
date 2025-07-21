@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+{% block title %}{{ client_name }} - Client Conversation{% endblock %}
+{% block content %}
+<div class="row">
+<div class="col-md-12">
+    <!-- Client Header -->
+    <div class="card mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2 class="mb-1">
+                        <i class="fas fa-user-circle me-2"></i>
+                        {{ client_name }}
+                    </h2>
+                    <p class="mb-0">
+                        <i class="fas fa-envelope me-1"></i>{{ client_email }}
+                        <span class="ms-3">
+                            <i class="fas fa-tag me-1"></i>{{ client_stats.status }}
+                        </span>
+                        <span class="ms-3">
+                            <i class="fas fa-folder me-1"></i>{{ client_stats.primary_category }}
+                        </span>
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="h4 mb-0">{{ client_stats.total_emails }}</div>
+                            <small>Total Emails</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h4 mb-0">{{ client_stats.unread_count }}</div>
+                            <small>Unread</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h4 mb-0">{{ client_stats.days_since_contact }}</div>
+                            <small>Days Ago</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<div class="row">
+<div class="col-md-8">
+    <!-- Conversation Timeline -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-comments me-2"></i>
+                Conversation Timeline
+            </h5>
+            <div class="btn-group btn-group-sm">
+                <a href="/reply/{{ emails[0][0].id }}" class="btn btn-success">
+                    <i class="fas fa-reply me-1"></i>Quick Reply
+                </a>
+                <button class="btn btn-outline-primary" onclick="markAllAsRead()">
+                    <i class="fas fa-eye me-1"></i>Mark All Read
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="timeline">
+                {% for email, classified in emails %}
+                <div class="timeline-item {{ 'unread' if not classified.is_read }}"
+                     onclick="window.location.href='/email/{{ email.id }}'"
+                     style="cursor: pointer; padding: 1rem; border-bottom: 1px solid #eee; {{ 'background-color: #fff3cd;' if not classified.is_read }}">
+                    <div class="row align-items-center">
+                        <div class="col-md-1 text-center">
+                            <div class="timeline-badge {{ 'bg-success' if email.is_sent else 'bg-primary' }} rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                {% if email.is_sent %}
+                                    <i class="fas fa-arrow-right"></i>
+                                {% else %}
+                                    <i class="fas fa-arrow-left"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <h6 class="mb-1">
+                                {% if email.is_sent %}
+                                    <span class="badge bg-success me-2">SENT</span>
+                                {% else %}
+                                    <span class="badge bg-info me-2">RECEIVED</span>
+                                {% endif %}
+                                {{ email.subject }}
+
+                                <!-- PAPERCLIP INDICATOR -->
+                                {% if email.get_attachments() %}
+                                    <i class="fas fa-paperclip ms-2 text-primary attachment-icon"
+                                       title="{{ email.get_attachments()|length }} attachment(s): {% for att in email.get_attachments() %}{{ att.filename }}{% if not loop.last %}, {% endif %}{% endfor %}"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-placement="top"></i>
+                                {% endif %}
+                            </h6>
+                            <p class="mb-1 text-muted">{{ classified.summary[:100] }}{% if classified.summary|length > 100 %}...{% endif %}</p>
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>{{ email.received_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                {% if not email.is_sent %}
+                                    <span class="ms-3">
+                                        <span class="badge bg-{{ 'danger' if classified.priority == 'Critical' else 'warning' if classified.priority == 'High' else 'info' }}">
+                                            {{ classified.priority }}
+                                        </span>
+                                    </span>
+                                {% endif %}
+
+                                <!-- ATTACHMENT COUNT IN DETAILS -->
+                                {% if email.get_attachments() %}
+                                    <span class="ms-3 text-primary">
+                                        <i class="fas fa-paperclip me-1"></i>{{ email.get_attachments()|length }} file{{ 's' if email.get_attachments()|length != 1 else '' }}
+                                    </span>
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <div class="btn-group btn-group-sm">
+                                <a href="/email/{{ email.id }}" class="btn btn-outline-primary btn-sm" title="View email details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="/reply/{{ email.id }}" class="btn btn-outline-success btn-sm" title="Reply to email">
+                                    <i class="fas fa-reply"></i>
+                                </a>
+                                {% if not classified.is_read %}
+                                    <button class="btn btn-outline-warning btn-sm"
+                                            onclick="event.stopPropagation(); markAsRead({{ email.id }})"
+                                            title="Mark as read">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="col-md-4">
+    <!-- Client Summary -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h6 class="mb-0">
+                <i class="fas fa-chart-pie me-2"></i>
+                Email Categories
+            </h6>
+        </div>
+        <div class="card-body">
+            {% for category, cat_emails in client_stats.categories.items() %}
+            <div class="d-flex justify-content-between mb-2">
+                <span>{{ category }}</span>
+                <span class="badge bg-secondary">{{ cat_emails|length }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Contact Timeline -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h6 class="mb-0">
+                <i class="fas fa-history me-2"></i>
+                Contact History
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="mb-2">
+                <strong>First Contact:</strong><br>
+                <small class="text-muted">
+                    {% if client_stats.first_contact %}
+                        {{ client_stats.first_contact.strftime('%B %d, %Y') }}
+                    {% else %}
+                        Unknown
+                    {% endif %}
+                </small>
+            </div>
+            <div class="mb-2">
+                <strong>Last Contact:</strong><br>
+                <small class="text-muted">
+                    {% if client_stats.last_contact %}
+                        {{ client_stats.last_contact.strftime('%B %d, %Y at %I:%M %p') }}
+                    {% else %}
+                        Unknown
+                    {% endif %}
+                </small>
+            </div>
+            <div class="mb-2">
+                <strong>Response Time:</strong><br>
+                <small class="text-success">
+                    <i class="fas fa-clock me-1"></i>
+                    {{ client_stats.days_since_contact }} days ago
+                </small>
+            </div>
+        </div>
+    </div>
+
+    {% if client_stats.properties_mentioned %}
+    <!-- Properties Mentioned -->
+    <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0">
+                <i class="fas fa-home me-2"></i>
+                Properties Discussed
+            </h6>
+        </div>
+        <div class="card-body">
+            {% for property in client_stats.properties_mentioned %}
+            <div class="mb-2">
+                <i class="fas fa-map-marker-alt me-1 text-muted"></i>
+                {{ property }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+</div>
+
+<div class="mt-4">
+    <a href="{{ url_for('main.client_list') }}" class="btn btn-secondary">
+        <i class="fas fa-users me-1"></i>All Clients
+    </a>
+    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary ms-2">
+        <i class="fas fa-arrow-left me-1"></i>Dashboard
+    </a>
+</div>
+
+<!-- Enhanced Styles for Attachment Indicators -->
+<style>
+.attachment-icon {
+    font-size: 0.9em;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.attachment-icon:hover {
+    opacity: 1;
+    color: #0d6efd !important;
+}
+
+.timeline-item:hover .attachment-icon {
+    opacity: 1;
+}
+
+/* Enhance tooltip for better attachment info */
+.tooltip-inner {
+    max-width: 300px;
+    text-align: left;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Initialize Bootstrap tooltips for attachment indicators
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            html: true,
+            placement: 'top'
+        });
+    });
+});
+
+function markAllAsRead() {
+    const unreadEmails = document.querySelectorAll('.timeline-item.unread');
+    if (unreadEmails.length === 0) {
+        alert('No unread emails to mark as read.');
+        return;
+    }
+    if (confirm(`Mark all ${unreadEmails.length} unread emails as read?`)) {
+        unreadEmails.forEach(item => {
+            // Extract email ID and mark as read
+            const emailId = item.onclick.toString().match(/\/email\/(\d+)/)[1];
+            markAsRead(emailId);
+        });
+        setTimeout(() => location.reload(), 1000);
+    }
+}
+
+function markAsRead(emailId) {
+    fetch(`/mark_read/${emailId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            const row = document.querySelector(`[onclick*="email/${emailId}"]`);
+            if (row) {
+                row.classList.remove('unread');
+                row.style.backgroundColor = '';
+                const checkBtn = row.querySelector('.fa-check');
+                if (checkBtn) {
+                    checkBtn.closest('button').remove();
+                }
+            }
+        }
+    })
+    .catch(error => console.error('Error marking as read:', error));
+}
+</script>
+{% endblock %}

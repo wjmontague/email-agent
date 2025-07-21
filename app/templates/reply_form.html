@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reply to {{ email.sender_name }} - Email AI Agent</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .cc-bcc-fields {
+            display: none;
+        }
+        .cc-bcc-fields.show {
+            display: block;
+        }
+        .reply-header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        .original-email {
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            margin-top: 1rem;
+        }
+        .reply-type-selector {
+            background-color: #e9ecef;
+            border-radius: 8px;
+            padding: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-envelope-open-text me-2"></i>
+                Email AI Agent
+            </a>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="/email/{{ email.id }}">Email</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Reply</li>
+                </ol>
+            </nav>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header reply-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-reply me-2"></i>Reply to {{ email.sender_name }}
+                            </h5>
+
+                            <!-- Reply Type Selector -->
+                            <div class="btn-group btn-group-sm reply-type-selector" role="group">
+                                <input type="radio" class="btn-check" name="replyType" id="reply" value="reply" checked>
+                                <label class="btn btn-outline-light" for="reply">
+                                    <i class="fas fa-reply me-1"></i>Reply
+                                </label>
+
+                                <input type="radio" class="btn-check" name="replyType" id="replyAll" value="replyAll">
+                                <label class="btn btn-outline-light" for="replyAll">
+                                    <i class="fas fa-reply-all me-1"></i>Reply All
+                                </label>
+
+                                <input type="radio" class="btn-check" name="replyType" id="forward" value="forward">
+                                <label class="btn btn-outline-light" for="forward">
+                                    <i class="fas fa-share me-1"></i>Forward
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form action="{{ url_for('email.send_reply') }}" method="POST" enctype="multipart/form-data">
+                            <input type="hidden" name="original_email_id" value="{{ email.id }}">
+                            <input type="hidden" name="reply_type" id="replyTypeField" value="reply">
+
+                            <!-- To Field -->
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center">
+                                    <label for="to" class="form-label me-2 mb-0" style="min-width: 100px;">To:</label>
+                                    <input type="email" class="form-control" id="to" name="to"
+                                           value="{{ reply_data.to }}" required>
+                                    <button type="button" class="btn btn-link btn-sm ms-2" onclick="toggleCcBcc()">
+                                        <small>CC/BCC</small>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- CC/BCC Fields (Initially Hidden) -->
+                            <div class="cc-bcc-fields" id="ccBccFields">
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <label for="cc" class="form-label me-2 mb-0" style="min-width: 100px;">CC:</label>
+                                        <input type="email" class="form-control" id="cc" name="cc"
+                                               placeholder="cc@example.com (optional)" multiple>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <label for="bcc" class="form-label me-2 mb-0" style="min-width: 100px;">BCC:</label>
+                                        <input type="email" class="form-control" id="bcc" name="bcc"
+                                               placeholder="bcc@example.com (optional)" multiple>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Subject Field -->
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center">
+                                    <label for="subject" class="form-label me-2 mb-0" style="min-width: 100px;">Subject:</label>
+                                    <input type="text" class="form-control" id="subject" name="subject"
+                                           value="{{ reply_data.subject }}" required>
+                                </div>
+                            </div>
+
+                            <!-- Message Field -->
+                            <div class="mb-3">
+                                <label for="message" class="form-label">Message:</label>
+                                <textarea class="form-control" id="message" name="message" rows="8" required>
+
+---
+On {{ reply_data.original_date }}, {{ reply_data.original_from }} wrote:
+{{ reply_data.original_body }}</textarea>
+                            </div>
+
+                            <!-- Attachments Field -->
+                            <div class="mb-3">
+                                <label for="attachments" class="form-label">
+                                    <i class="fas fa-paperclip me-1"></i>Attachments (optional):
+                                </label>
+                                <input type="file" class="form-control" id="attachments"
+                                       name="attachments" multiple accept="*/*">
+                                <div class="form-text">Add additional files to this reply.</div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <button type="submit" class="btn btn-success btn-lg">
+                                        <i class="fas fa-paper-plane me-1"></i><span id="sendButtonText">Send Reply</span>
+                                    </button>
+                                    <a href="/email/{{ email.id }}" class="btn btn-secondary ms-2">
+                                        <i class="fas fa-times me-1"></i>Cancel
+                                    </a>
+                                </div>
+                                <div>
+                                    <button type="button" class="btn btn-outline-secondary me-2" onclick="saveAsDraft()">
+                                        <i class="fas fa-save me-1"></i>Save Draft
+                                    </button>
+                                    <button type="button" class="btn btn-outline-info" onclick="suggestReply()">
+                                        <i class="fas fa-magic me-1"></i>AI Suggest
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <!-- Original Email Summary -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Original Email</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>From:</strong> {{ email.sender_name }}</p>
+                        <p><strong>Date:</strong> {{ email.received_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                        <p><strong>Subject:</strong> {{ email.subject }}</p>
+                        {% if classified %}
+                            <p><strong>Category:</strong>
+                                <span class="badge {{ classified.priority_badge }}">{{ classified.category }}</span>
+                            </p>
+                            {% if classified.summary %}
+                                <p><strong>Summary:</strong> {{ classified.summary }}</p>
+                            {% endif %}
+                        {% endif %}
+
+                        <!-- Show original attachments if any -->
+                        {% if email.get_attachments() %}
+                            <p><strong>Attachments:</strong></p>
+                            <ul class="list-unstyled">
+                                {% for attachment in email.get_attachments() %}
+                                    <li class="mb-1">
+                                        <i class="fas fa-paperclip me-1 text-primary"></i>
+                                        <small>{{ attachment.filename }}</small>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6><i class="fas fa-bolt me-2"></i>Quick Responses</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-success btn-sm" onclick="addQuickResponse('acknowledge')">
+                                <i class="fas fa-check me-1"></i>Acknowledge Receipt
+                            </button>
+                            <button class="btn btn-outline-info btn-sm" onclick="addQuickResponse('schedule')">
+                                <i class="fas fa-calendar me-1"></i>Schedule Meeting
+                            </button>
+                            <button class="btn btn-outline-warning btn-sm" onclick="addQuickResponse('followup')">
+                                <i class="fas fa-clock me-1"></i>Follow-up Later
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm" onclick="addQuickResponse('thanks')">
+                                <i class="fas fa-thumbs-up me-1"></i>Thank You
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reply Tips -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-lightbulb me-2"></i>Reply Tips</h6>
+                    </div>
+                    <div class="card-body">
+                        <small class="text-muted">
+                            <ul class="mb-0">
+                                <li><strong>Reply:</strong> Responds only to sender</li>
+                                <li><strong>Reply All:</strong> Responds to all recipients</li>
+                                <li><strong>Forward:</strong> Send to new recipients</li>
+                                <li>Use CC for transparency</li>
+                                <li>Use BCC to protect privacy</li>
+                                <li>Keep responses concise and clear</li>
+                            </ul>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Handle reply type changes
+        document.querySelectorAll('input[name="replyType"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                updateReplyType(this.value);
+            });
+        });
+
+        function updateReplyType(type) {
+            const toField = document.getElementById('to');
+            const subjectField = document.getElementById('subject');
+            const sendButton = document.getElementById('sendButtonText');
+            const replyTypeField = document.getElementById('replyTypeField');
+
+            replyTypeField.value = type;
+
+            switch(type) {
+                case 'reply':
+                    toField.value = '{{ reply_data.to }}';
+                    subjectField.value = '{{ reply_data.subject }}';
+                    sendButton.textContent = 'Send Reply';
+                    break;
+
+                case 'replyAll':
+                    // Add logic to populate all original recipients
+                    toField.value = '{{ reply_data.to }}';
+                    // Show CC/BCC fields and populate if there were other recipients
+                    document.getElementById('ccBccFields').classList.add('show');
+                    subjectField.value = '{{ reply_data.subject }}';
+                    sendButton.textContent = 'Reply to All';
+                    break;
+
+                case 'forward':
+                    toField.value = '';
+                    toField.placeholder = 'Enter recipient email...';
+                    subjectField.value = 'Fwd: {{ email.subject }}';
+                    sendButton.textContent = 'Forward Email';
+                    break;
+            }
+        }
+
+        function toggleCcBcc() {
+            const ccBccFields = document.getElementById('ccBccFields');
+            ccBccFields.classList.toggle('show');
+
+            if (ccBccFields.classList.contains('show')) {
+                document.getElementById('cc').focus();
+            }
+        }
+
+        function addQuickResponse(type) {
+            const messageField = document.getElementById('message');
+            let response = '';
+
+            switch(type) {
+                case 'acknowledge':
+                    response = `Thank you for your email. I have received your message and will review it shortly.
+
+Best regards,
+Michael Aubry`;
+                    break;
+
+                case 'schedule':
+                    response = `Thank you for your email. I'd like to schedule a meeting to discuss this further.
+
+I'm available:
+- [Day/Time Option 1]
+- [Day/Time Option 2]
+- [Day/Time Option 3]
+
+Please let me know what works best for you.
+
+Best regards,
+Michael Aubry`;
+                    break;
+
+                case 'followup':
+                    response = `Thank you for your email. I will need some time to research this and will follow up with you by [Date].
+
+I appreciate your patience.
+
+Best regards,
+Michael Aubry`;
+                    break;
+
+                case 'thanks':
+                    response = `Thank you for your email and for choosing Desert Valley Realty Solutions.
+
+Please don't hesitate to reach out if you have any other questions.
+
+Best regards,
+Michael Aubry`;
+                    break;
+            }
+
+            // Insert at cursor position or replace selection
+            const cursorPosition = messageField.selectionStart;
+            const textBefore = messageField.value.substring(0, cursorPosition);
+            const textAfter = messageField.value.substring(messageField.selectionEnd);
+
+            messageField.value = textBefore + response + '\n\n' + textAfter;
+            messageField.focus();
+        }
+
+        function suggestReply() {
+            alert('🤖 AI reply suggestion coming soon!\n\nThis feature will analyze the original email and suggest appropriate responses based on context and your usual communication style.');
+        }
+
+        function saveAsDraft() {
+            const draftData = {
+                to: document.getElementById('to').value,
+                cc: document.getElementById('cc').value,
+                bcc: document.getElementById('bcc').value,
+                subject: document.getElementById('subject').value,
+                message: document.getElementById('message').value,
+                replyType: document.getElementById('replyTypeField').value,
+                originalEmailId: '{{ email.id }}',
+                timestamp: new Date().toLocaleString()
+            };
+
+            localStorage.setItem('replyDraft_{{ email.id }}', JSON.stringify(draftData));
+        }
+
+        function loadDraft() {
+            const draft = localStorage.getItem('replyDraft_{{ email.id }}');
+            if (draft) {
+                const draftData = JSON.parse(draft);
+                if (confirm(`Load reply draft from ${draftData.timestamp}?`)) {
+                    document.getElementById('to').value = draftData.to || '';
+                    document.getElementById('cc').value = draftData.cc || '';
+                    document.getElementById('bcc').value = draftData.bcc || '';
+                    document.getElementById('subject').value = draftData.subject || '';
+                    document.getElementById('message').value = draftData.message || '';
+
+                    // Set reply type
+                    if (draftData.replyType) {
+                        document.querySelector(`input[value="${draftData.replyType}"]`).checked = true;
+                        updateReplyType(draftData.replyType);
+                    }
+
+                    // Show CC/BCC if they have values
+                    if (draftData.cc || draftData.bcc) {
+                        document.getElementById('ccBccFields').classList.add('show');
+                    }
+                }
+            } else {
+                alert('No saved reply draft found.');
+            }
+        }
+
+        // Auto-save draft every 30 seconds
+        setInterval(function() {
+            const hasContent = document.getElementById('to').value ||
+                              document.getElementById('subject').value ||
+                              document.getElementById('message').value.trim() !== `
+
+---
+On {{ reply_data.original_date }}, {{ reply_data.original_from }} wrote:
+{{ reply_data.original_body }}`;
+            if (hasContent) {
+                saveAsDraft();
+            }
+        }, 30000);
+
+        // Load draft on page load if available
+        window.addEventListener('load', function() {
+            const draft = localStorage.getItem('replyDraft_{{ email.id }}');
+            if (draft) {
+                const button = document.createElement('button');
+                button.className = 'btn btn-outline-warning btn-sm';
+                button.innerHTML = '<i class="fas fa-file-alt me-1"></i>Load Draft';
+                button.onclick = loadDraft;
+
+                const cardBody = document.querySelector('.card-body');
+                const firstElement = cardBody.firstElementChild;
+                const draftDiv = document.createElement('div');
+                draftDiv.className = 'alert alert-info';
+                draftDiv.innerHTML = '<i class="fas fa-info-circle me-2"></i>You have a saved reply draft. ';
+                draftDiv.appendChild(button);
+                cardBody.insertBefore(draftDiv, firstElement);
+            }
+        });
+
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    </script>
+    <script>
+// Simple, direct solution for urgent reply handling
+document.addEventListener('DOMContentLoaded', function() {
+    // Get the email ID and priority from the page
+    const emailId = {{ email.id }};
+    {% if classified %}
+    const priority = "{{ classified.priority }}";
+    {% else %}
+    const priority = null;
+    {% endif %}
+
+    console.log('Email ID:', emailId, 'Priority:', priority);
+
+    // Handle form submission
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            console.log('Form submitted for email', emailId, 'with priority', priority);
+
+            // Store the reply info immediately
+            const replyInfo = {
+                emailId: emailId,
+                priority: priority,
+                timestamp: Date.now(),
+                replied: true
+            };
+
+            // Store in localStorage for reply indicator
+            const repliedEmails = JSON.parse(localStorage.getItem('repliedEmails') || '[]');
+            if (!repliedEmails.includes(emailId)) {
+                repliedEmails.push(emailId);
+                localStorage.setItem('repliedEmails', JSON.stringify(repliedEmails));
+                console.log('Stored reply indicator for email', emailId);
+            }
+
+            // For urgent emails, store count update info
+            if (priority === 'Critical' || priority === 'High') {
+                sessionStorage.setItem('urgentReplyData', JSON.stringify(replyInfo));
+                console.log('Stored urgent reply data:', replyInfo);
+
+                // Show immediate feedback
+                setTimeout(function() {
+                    const alertDiv = document.createElement('div');
+                    alertDiv.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: #28a745;
+                        color: white;
+                        padding: 15px;
+                        border-radius: 8px;
+                        z-index: 9999;
+                        max-width: 300px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    `;
+                    alertDiv.innerHTML = `
+                        <strong>✅ Urgent ${priority} Reply Sent!</strong><br>
+                        <small>Counts will update on next page</small>
+                    `;
+                    document.body.appendChild(alertDiv);
+
+                    setTimeout(() => alertDiv.remove(), 3000);
+                }, 100);
+            }
+        });
+    }
+
+    // Check if we just came from sending a reply
+    const urgentReplyData = sessionStorage.getItem('urgentReplyData');
+    if (urgentReplyData) {
+        const data = JSON.parse(urgentReplyData);
+        console.log('Found urgent reply data:', data);
+
+        // Clear the data
+        sessionStorage.removeItem('urgentReplyData');
+
+        // Update counts on dashboard if we're on the right page
+        setTimeout(function() {
+            updateUrgentCounts(data.priority);
+            showSuccessMessage(data.priority);
+        }, 500);
+    }
+
+    // Add reply indicators
+    addReplyIndicators();
+});
+
+// Simple function to update urgent counts
+function updateUrgentCounts(priority) {
+    console.log('Updating counts for priority:', priority);
+
+    // Update unread count
+    const unreadElement = document.querySelector('.h3.text-warning');
+    if (unreadElement) {
+        const currentCount = parseInt(unreadElement.textContent) || 0;
+        if (currentCount > 0) {
+            unreadElement.textContent = currentCount - 1;
+            console.log('Updated unread count to:', currentCount - 1);
+        }
+    }
+
+    // Update priority-specific counts
+    if (priority === 'Critical') {
+        const criticalElement = document.querySelector('.h3.text-danger');
+        if (criticalElement) {
+            const currentCount = parseInt(criticalElement.textContent) || 0;
+            if (currentCount > 0) {
+                criticalElement.textContent = currentCount - 1;
+                console.log('Updated critical count to:', currentCount - 1);
+            }
+        }
+    } else if (priority === 'High') {
+        const highElement = document.querySelector('.h3.text-success');
+        if (highElement) {
+            const currentCount = parseInt(highElement.textContent) || 0;
+            if (currentCount > 0) {
+                highElement.textContent = currentCount - 1;
+                console.log('Updated high count to:', currentCount - 1);
+            }
+        }
+    }
+}
+
+// Simple function to show success message
+function showSuccessMessage(priority) {
+    const alertDiv = document.createElement('div');
+    alertDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 20px;
+        border-radius: 12px;
+        z-index: 9999;
+        max-width: 350px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    `;
+    alertDiv.innerHTML = `
+        <div style="display: flex; align-items: center;">
+            <div style="font-size: 24px; margin-right: 12px;">🎉</div>
+            <div>
+                <strong>Urgent ${priority} Reply Sent!</strong><br>
+                <small style="opacity: 0.9;">Dashboard counts updated</small>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(alertDiv);
+
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.style.transform = 'translateX(100%)';
+            alertDiv.style.transition = 'transform 0.3s ease';
+            setTimeout(() => alertDiv.remove(), 300);
+        }
+    }, 4000);
+}
+
+// Simple function to add reply indicators
+function addReplyIndicators() {
+    const repliedEmails = JSON.parse(localStorage.getItem('repliedEmails') || '[]');
+    console.log('Replied emails:', repliedEmails);
+
+    // For email detail pages
+    if (window.location.pathname.includes('/email/')) {
+        const emailId = parseInt(window.location.pathname.split('/').pop());
+        if (repliedEmails.includes(emailId)) {
+            // Add indicator to email header
+            const emailHeader = document.querySelector('.card-header h5');
+            if (emailHeader && !emailHeader.querySelector('.reply-indicator')) {
+                const indicator = document.createElement('span');
+                indicator.className = 'badge bg-success me-2 reply-indicator';
+                indicator.innerHTML = '↪ Replied';
+                indicator.style.fontSize = '0.8em';
+                emailHeader.insertBefore(indicator, emailHeader.firstChild);
+                console.log('Added reply indicator to email', emailId);
+            }
+        }
+    }
+
+    // For email lists (category views, dashboard)
+    document.querySelectorAll('[data-email-id]').forEach(row => {
+        const emailId = parseInt(row.dataset.emailId);
+        if (repliedEmails.includes(emailId)) {
+            // Add green reply icon
+            const subjectCell = row.querySelector('td:nth-child(4)');
+            if (subjectCell && !subjectCell.querySelector('.reply-icon')) {
+                const icon = document.createElement('span');
+                icon.className = 'reply-icon';
+                icon.innerHTML = '<i class="fas fa-reply text-success me-1"></i>';
+                icon.style.fontSize = '0.9em';
+                icon.title = 'You replied to this email';
+
+                const firstText = subjectCell.querySelector('.fw-bold') || subjectCell;
+                firstText.insertBefore(icon, firstText.firstChild);
+                console.log('Added reply icon to email row', emailId);
+            }
+        }
+    });
+}
+</script>
+
+<!-- Add simple CSS for reply indicators -->
+<style>
+.reply-indicator {
+    animation: fadeIn 0.5s ease;
+}
+
+.reply-icon {
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+// Universal reply handling that works on all pages
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Universal reply script loaded on:', window.location.pathname);
+
+    // Check for urgent reply completion when any page loads
+    checkForUrgentReplyUpdate();
+
+    // Add reply indicators to any page that shows emails
+    addReplyIndicatorsToPage();
+
+    // If this is a reply form, set up the submission handler
+    if (window.location.pathname.includes('/reply/')) {
+        setupReplyFormHandler();
+    }
+});
+
+function checkForUrgentReplyUpdate() {
+    const urgentReplyData = sessionStorage.getItem('urgentReplyData');
+    if (urgentReplyData) {
+        console.log('Found urgent reply data, processing update...');
+        const data = JSON.parse(urgentReplyData);
+
+        // Clear the data so it doesn't run again
+        sessionStorage.removeItem('urgentReplyData');
+
+        // Update counts after a brief delay
+        setTimeout(function() {
+            updateUrgentCountsOnPage(data.priority);
+            showUrgentReplySuccess(data.priority);
+        }, 500);
+    }
+}
+
+function updateUrgentCountsOnPage(priority) {
+    console.log('Updating counts for priority:', priority);
+    console.log('Current page:', window.location.pathname);
+
+    // Log all elements that might contain counts
+    console.log('Looking for count elements...');
+
+    // Method 1: Find all elements with numbers
+    document.querySelectorAll('*').forEach(el => {
+        const text = el.textContent.trim();
+        if (text === '1' && el.tagName && (el.classList.contains('h4') || el.classList.contains('h3') || el.style.fontSize)) {
+            console.log('Found element with "1":', el, 'Parent:', el.parentElement);
+        }
+    });
+
+    // Method 2: Look for specific patterns on client pages
+    const clientPageElements = document.querySelectorAll('.card-body .h4, .stats-card .h3, .text-center .h4');
+    clientPageElements.forEach(el => {
+        console.log('Stats element found:', el.textContent, el);
+        if (el.textContent.trim() === '1' && priority === 'Critical') {
+            // Check if this is in a Critical Alerts context
+            const cardBody = el.closest('.card-body');
+            const cardText = cardBody ? cardBody.textContent : '';
+            console.log('Card context:', cardText);
+
+            if (cardText.includes('Critical Alerts') || cardText.includes('Critical')) {
+                console.log('Found Critical Alerts count element, updating...');
+                el.textContent = '0';
+
+                // Also update any parent elements that might show the count
+                const parentCard = el.closest('.card');
+                if (parentCard) {
+                    const cardTitle = parentCard.querySelector('h6');
+                    if (cardTitle && cardTitle.textContent.includes('Critical Alerts')) {
+                        console.log('Updated Critical Alerts card');
+                    }
+                }
+
+                // Show visual feedback
+                el.style.animation = 'flash 1s ease';
+                setTimeout(() => el.style.animation = '', 1000);
+            }
+        }
+    });
+
+    // Method 3: Brute force - find ANY element with "1" near "Critical Alerts" text
+    const allElements = document.querySelectorAll('*');
+    for (let i = 0; i < allElements.length; i++) {
+        const el = allElements[i];
+        const text = el.textContent;
+
+        // Check if this element or nearby elements mention Critical Alerts
+        if (text.includes('Critical Alerts') && priority === 'Critical') {
+            console.log('Found Critical Alerts context at:', el);
+
+            // Look for number elements within this container
+            const numberElements = el.querySelectorAll('.h4, .h3, .badge, strong');
+            numberElements.forEach(numEl => {
+                if (numEl.textContent.trim() === '1') {
+                    console.log('Found count "1" in Critical Alerts context, updating to 0');
+                    numEl.textContent = '0';
+                    numEl.style.animation = 'flash 1s ease';
+                }
+            });
+
+            // Also check siblings and nearby elements
+            const siblings = el.parentElement ? el.parentElement.children : [];
+            for (let sibling of siblings) {
+                if (sibling.textContent.trim() === '1') {
+                    console.log('Found sibling with count "1", updating');
+                    sibling.textContent = '0';
+                    sibling.style.animation = 'flash 1s ease';
+                }
+            }
+        }
+    }
+
+    // Method 4: Look for the specific pattern from Amy's page
+    // Find elements that contain exactly "1" and are styled as counts
+    const potentialCountElements = document.querySelectorAll('div, span, h1, h2, h3, h4, h5, h6');
+    potentialCountElements.forEach(el => {
+        const text = el.textContent.trim();
+        const computedStyle = window.getComputedStyle(el);
+
+        if (text === '1' &&
+            (computedStyle.fontWeight === 'bold' ||
+             computedStyle.fontWeight === '700' ||
+             el.classList.contains('h4') ||
+             el.style.fontWeight === 'bold')) {
+
+            console.log('Found bold "1" element:', el);
+
+            // Check if this is in a Critical context by looking at surrounding text
+            const container = el.closest('.card, .card-body, .stats-card, .category-card');
+            if (container) {
+                const containerText = container.textContent;
+                console.log('Container text:', containerText);
+
+                if (containerText.includes('Critical') && priority === 'Critical') {
+                    console.log('UPDATING Critical count from 1 to 0');
+                    el.textContent = '0';
+                    el.style.background = '#28a745';
+                    el.style.color = 'white';
+                    el.style.padding = '2px 6px';
+                    el.style.borderRadius = '4px';
+                    el.style.transition = 'all 0.5s ease';
+
+                    setTimeout(() => {
+                        el.style.background = '';
+                        el.style.color = '';
+                        el.style.padding = '';
+                    }, 2000);
+                }
+            }
+        }
+    });
+
+    // Add flash animation CSS if not exists
+    if (!document.querySelector('#flashAnimation')) {
+        const style = document.createElement('style');
+        style.id = 'flashAnimation';
+        style.textContent = `
+            @keyframes flash {
+                0%, 100% { background-color: transparent; }
+                50% { background-color: #28a745; color: white; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
+function addReplyIndicatorsToPage() {
+    const repliedEmails = JSON.parse(localStorage.getItem('repliedEmails') || '[]');
+    console.log('Adding reply indicators for emails:', repliedEmails);
+
+    // For timeline items (client conversation page)
+    document.querySelectorAll('.timeline-item').forEach(item => {
+        const onclick = item.getAttribute('onclick');
+        if (onclick && onclick.includes('/email/')) {
+            const emailId = parseInt(onclick.match(/\/email\/(\d+)/)?.[1]);
+            if (emailId && repliedEmails.includes(emailId)) {
+                // Add reply indicator to timeline
+                const badge = item.querySelector('.timeline-badge');
+                if (badge && !badge.querySelector('.reply-icon')) {
+                    const replyIcon = document.createElement('div');
+                    replyIcon.className = 'reply-icon';
+                    replyIcon.innerHTML = '↪';
+                    replyIcon.style.cssText = `
+                        position: absolute;
+                        top: -5px;
+                        right: -5px;
+                        background: #28a745;
+                        color: white;
+                        border-radius: 50%;
+                        width: 16px;
+                        height: 16px;
+                        font-size: 10px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        border: 2px solid white;
+                    `;
+                    badge.style.position = 'relative';
+                    badge.appendChild(replyIcon);
+                    console.log('Added timeline reply indicator for email', emailId);
+                }
+
+                // Add text indicator to the email title
+                const titleElement = item.querySelector('h6');
+                if (titleElement && !titleElement.textContent.includes('[REPLIED]')) {
+                    titleElement.innerHTML = '<span style="color: #28a745; font-weight: bold;">[REPLIED]</span> ' + titleElement.innerHTML;
+                }
+            }
+        }
+    });
+
+    // For email detail pages
+    if (window.location.pathname.includes('/email/')) {
+        const emailId = parseInt(window.location.pathname.split('/').pop());
+        if (repliedEmails.includes(emailId)) {
+            const emailHeader = document.querySelector('.card-header h5');
+            if (emailHeader && !emailHeader.querySelector('.reply-indicator')) {
+                const indicator = document.createElement('span');
+                indicator.className = 'badge bg-success me-2 reply-indicator';
+                indicator.innerHTML = '↪ REPLIED';
+                emailHeader.insertBefore(indicator, emailHeader.firstChild);
+                console.log('Added reply indicator to email detail page');
+            }
+        }
+    }
+}
+
+function setupReplyFormHandler() {
+    const emailIdMatch = window.location.pathname.match(/\/reply\/(\d+)/);
+    if (!emailIdMatch) return;
+
+    const emailId = parseInt(emailIdMatch[1]);
+
+    // Try to get priority from the page
+    const priorityBadge = document.querySelector('.badge');
+    const priority = priorityBadge ? priorityBadge.textContent.trim() : null;
+
+    console.log('Setting up reply form for email:', emailId, 'priority:', priority);
+
+    const form = document.querySelector('form[action*="send_reply"]');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            console.log('Reply form submitted for email', emailId);
+
+            // Store reply indicator
+            const repliedEmails = JSON.parse(localStorage.getItem('repliedEmails') || '[]');
+            if (!repliedEmails.includes(emailId)) {
+                repliedEmails.push(emailId);
+                localStorage.setItem('repliedEmails', JSON.stringify(repliedEmails));
+                console.log('Stored reply indicator for email', emailId);
+            }
+
+            // For urgent emails, store update data
+            if (priority === 'Critical' || priority === 'High') {
+                const urgentData = {
+                    emailId: emailId,
+                    priority: priority,
+                    timestamp: Date.now()
+                };
+                sessionStorage.setItem('urgentReplyData', JSON.stringify(urgentData));
+                console.log('Stored urgent reply data:', urgentData);
+            }
+        });
+    }
+}
+
+function showUrgentReplySuccess(priority) {
+    const alertDiv = document.createElement('div');
+    alertDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 20px;
+        border-radius: 12px;
+        z-index: 9999;
+        max-width: 350px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        animation: slideInRight 0.5s ease;
+    `;
+    alertDiv.innerHTML = `
+        <div style="display: flex; align-items: center;">
+            <div style="font-size: 24px; margin-right: 12px;">🎉</div>
+            <div>
+                <strong>Urgent ${priority} Reply Sent!</strong><br>
+                <small style="opacity: 0.9;">Counts updated successfully</small>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(alertDiv);
+
+    setTimeout(() => {
+        alertDiv.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => alertDiv.remove(), 300);
+    }, 4000);
+}
+
+// Add animation CSS
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
+
+</style>
+</body>
+</html>

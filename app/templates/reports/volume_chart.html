@@ -1,0 +1,425 @@
+<!-- Enhanced Volume Chart Section with Time Period Options -->
+<div class="row">
+<div class="col-md-12 mb-4">
+<div class="card">
+<div class="card-header bg-info text-white">
+<h5 class="mb-0">
+<i class="fas fa-chart-line me-2"></i>
+Email Volume Over Time
+</h5>
+</div>
+<div class="card-body">
+
+
+<!-- Chart Header with Trend Indicator -->
+<div class="chart-header d-flex justify-content-between align-items-center mb-3">
+<h6 class="chart-title mb-0 text-muted">Email Volume Trends</h6>
+<div id="trendIndicator" class="trend-indicator trend-stable">
+<i class="fas fa-minus me-1"></i>
+No trend data
+</div>
+</div>
+
+<!-- Time Period Selection Buttons -->
+<div class="time-period-buttons d-flex gap-2 mb-3 flex-wrap">
+<button class="time-period-btn active" data-period="30" data-label="Last 30 Days">
+Last 30 Days
+</button>
+<button class="time-period-btn" data-period="90" data-label="Last Quarter">
+Last Quarter
+</button>
+<button class="time-period-btn" data-period="180" data-label="Last 6 Months">
+Last 6 Months
+</button>
+<button class="time-period-btn" data-period="365" data-label="Last Year">
+Last Year
+</button>
+</div>
+
+{% if daily_volumes %}
+<!-- Chart Container -->
+<div class="chart-container position-relative mb-4" style="height: 400px;">
+<canvas id="volumeChart"></canvas>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row">
+<div class="col-md-3 mb-3">
+<div class="stat-card">
+<div class="stat-number" id="totalEmails">{{ total_emails or 0 }}</div>
+<div class="stat-label">Total Emails</div>
+</div>
+</div>
+<div class="col-md-3 mb-3">
+<div class="stat-card">
+<div class="stat-number" id="dailyAverage">{{ daily_average or 0 }}</div>
+<div class="stat-label">Daily Average</div>
+</div>
+</div>
+<div class="col-md-3 mb-3">
+<div class="stat-card">
+<div class="stat-number" id="peakDay">{{ peak_day or 0 }}</div>
+<div class="stat-label">Peak Day</div>
+</div>
+</div>
+<div class="col-md-3 mb-3">
+<div class="stat-card">
+<div class="stat-number" id="activeDays">{{ active_days or 0 }}</div>
+<div class="stat-label">Active Days</div>
+</div>
+</div>
+</div>
+{% else %}
+<!-- No Data State -->
+<div class="text-center text-muted py-5">
+<i class="fas fa-chart-line fa-3x mb-3"></i>
+<p>No daily volume data available yet.</p>
+<small>Process some emails to see volume trends here.</small>
+</div>
+{% endif %}
+</div>
+</div>
+</div>
+</div>
+
+<!-- Enhanced Styling -->
+<style>
+.time-period-buttons {
+    gap: 10px;
+}
+
+.time-period-btn {
+    padding: 8px 16px;
+    border: 2px solid #17a2b8;
+    background: white;
+    color: #17a2b8;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.time-period-btn:hover {
+    background: #e8f4f8;
+    transform: translateY(-1px);
+}
+
+.time-period-btn.active {
+    background: #17a2b8;
+    color: white;
+    box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3);
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    border-radius: 12px;
+    padding: 20px;
+    color: white;
+    text-align: center;
+    height: 100%;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.chart-header {
+    margin-bottom: 20px;
+}
+
+.chart-title {
+    color: #495057;
+}
+
+.trend-indicator {
+    font-size: 0.9rem;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.trend-up {
+    background: #d4edda;
+    color: #155724;
+}
+
+.trend-down {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.trend-stable {
+    background: #e2e3e5;
+    color: #383d41;
+}
+</style>
+
+<!-- JavaScript for Chart Functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Enhanced Volume Chart loaded');
+    
+    // Initialize chart data from template
+    {% if daily_volumes %}
+    const serverVolumeData = [
+        {% for volume in daily_volumes %}
+        {
+            date: '{{ volume.date }}',
+            count: {{ volume.count }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    {% else %}
+    const serverVolumeData = [];
+    {% endif %}
+    
+    const isDemoMode = false;
+    
+    class EnhancedVolumeChart {
+        constructor() {
+            this.chart = null;
+            this.currentPeriod = 30;
+            this.currentLabel = 'Last 30 Days';
+            this.allData = serverVolumeData;
+            this.initChart();
+            this.bindEvents();
+            this.updateChart();
+        }
+
+                // generateSampleData() {
+        //             // Demo data generation (same as before but smaller)
+        //             const data = [];
+        //             const now = new Date();
+            
+        //             for (let i = 365; i >= 0; i--) {
+        //                 const date = new Date(now);
+        //                 date.setDate(date.getDate() - i);
+                
+        //                 let baseVolume = 5;
+        //                 const dayOfWeek = date.getDay();
+        //                 if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+        //                     baseVolume *= 1.5;
+        //                 }
+                
+                const variation = Math.random() * 0.6 + 0.7;
+                const spike = Math.random() < 0.1 ? 2 : 1;
+                const volume = Math.round(baseVolume * variation * spike);
+                
+                data.push({
+                    date: date.toISOString().split('T')[0],
+                    count: volume
+                });
+            }
+            
+            return data;
+        }
+
+        initChart() {
+            const volumeCtx = document.getElementById('volumeChart');
+            if (!volumeCtx) return;
+
+            this.chart = new Chart(volumeCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Emails per Day',
+                        data: [],
+                        borderColor: '#17a2b8',
+                        backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#17a2b8',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            borderColor: '#17a2b8',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: (context) => `${context.parsed.y} emails`,
+                                title: (context) => {
+                                    const date = new Date(context[0].label);
+                                    return date.toLocaleDateString('en-US', {
+                                        weekday: 'long',
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                    });
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(value) {
+                                    return Number.isInteger(value) ? value : '';
+                                }
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { maxTicksLimit: 12 }
+                        }
+                    }
+                }
+            });
+        }
+
+        bindEvents() {
+            document.querySelectorAll('.time-period-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.time-period-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    this.currentPeriod = parseInt(e.target.dataset.period);
+                    this.currentLabel = e.target.dataset.label;
+                    this.updateChart();
+                });
+            });
+        }
+
+        updateChart() {
+            const filteredData = this.getFilteredData();
+            const labels = this.generateLabels(filteredData);
+            const counts = filteredData.map(item => item.count);
+            
+            this.chart.data.labels = labels;
+            this.chart.data.datasets[0].data = counts;
+            this.chart.update('active');
+            
+            this.updateStats(filteredData);
+            this.updateTrendIndicator(filteredData);
+        }
+
+        getFilteredData() {
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - this.currentPeriod);
+            
+            return this.allData.filter(item => {
+                const itemDate = new Date(item.date);
+                return itemDate >= cutoffDate;
+            });
+        }
+
+        generateLabels(data) {
+            if (this.currentPeriod <= 30) {
+                return data.map(item => {
+                    const date = new Date(item.date);
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                });
+            } else if (this.currentPeriod <= 90) {
+                return this.aggregateWeekly(data).map(item => {
+                    const date = new Date(item.date);
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                });
+            } else {
+                return this.aggregateMonthly(data).map(item => {
+                    const date = new Date(item.date);
+                    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                });
+            }
+        }
+
+        aggregateWeekly(data) {
+            const weeks = {};
+            data.forEach(item => {
+                const date = new Date(item.date);
+                const weekStart = new Date(date);
+                weekStart.setDate(date.getDate() - date.getDay());
+                const weekKey = weekStart.toISOString().split('T')[0];
+                
+                if (!weeks[weekKey]) {
+                    weeks[weekKey] = { date: weekKey, count: 0 };
+                }
+                weeks[weekKey].count += item.count;
+            });
+            
+            return Object.values(weeks).sort((a, b) => new Date(a.date) - new Date(b.date));
+        }
+
+        aggregateMonthly(data) {
+            const months = {};
+            data.forEach(item => {
+                const date = new Date(item.date);
+                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
+                
+                if (!months[monthKey]) {
+                    months[monthKey] = { date: monthKey, count: 0 };
+                }
+                months[monthKey].count += item.count;
+            });
+            
+            return Object.values(months).sort((a, b) => new Date(a.date) - new Date(b.date));
+        }
+
+        updateStats(data) {
+            const totalEmails = data.reduce((sum, item) => sum + item.count, 0);
+            const dailyAverage = data.length > 0 ? Math.round(totalEmails / data.length) : 0;
+            const peakDay = data.length > 0 ? Math.max(...data.map(item => item.count)) : 0;
+            const activeDays = data.filter(item => item.count > 0).length;
+            
+            document.getElementById('totalEmails').textContent = totalEmails.toLocaleString();
+            document.getElementById('dailyAverage').textContent = dailyAverage;
+            document.getElementById('peakDay').textContent = peakDay;
+            document.getElementById('activeDays').textContent = activeDays;
+        }
+
+        updateTrendIndicator(data) {
+            if (data.length < 2) return;
+            
+            const midpoint = Math.floor(data.length / 2);
+            const firstHalf = data.slice(0, midpoint);
+            const secondHalf = data.slice(midpoint);
+            
+            const firstAvg = firstHalf.reduce((sum, item) => sum + item.count, 0) / firstHalf.length;
+            const secondAvg = secondHalf.reduce((sum, item) => sum + item.count, 0) / secondHalf.length;
+            
+            const trendIndicator = document.getElementById('trendIndicator');
+            const percentChange = ((secondAvg - firstAvg) / firstAvg * 100).toFixed(1);
+            
+            if (Math.abs(percentChange) < 5) {
+                trendIndicator.className = 'trend-indicator trend-stable';
+                trendIndicator.innerHTML = '<i class="fas fa-minus me-1"></i>Stable';
+            } else if (percentChange > 0) {
+                trendIndicator.className = 'trend-indicator trend-up';
+                trendIndicator.innerHTML = `<i class="fas fa-arrow-up me-1"></i>+${percentChange}%`;
+            } else {
+                trendIndicator.className = 'trend-indicator trend-down';
+                trendIndicator.innerHTML = `<i class="fas fa-arrow-down me-1"></i>${percentChange}%`;
+            }
+        }
+    }
+
+    // Initialize the enhanced chart
+    if (document.getElementById('volumeChart')) {
+        new EnhancedVolumeChart();
+    }
+});
+</script>

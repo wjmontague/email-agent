@@ -1,0 +1,326 @@
+<!-- Enhanced Email Processing Controls with Better Status Feedback -->
+<!-- File: app/templates/reports/processing_controls.html -->
+<div class="row mb-4">
+<div class="col-md-12">
+<div class="processing-card">
+<div class="row align-items-center">
+<div class="col-md-8">
+<h5 class="mb-2"><i class="fas fa-cogs me-2"></i>Email Processing Controls</h5>
+
+<!-- Enhanced Status Display -->
+{% if email_gap %}
+<div class="mb-3">
+<div class="alert {{ 'alert-warning' if email_gap.show_historical_button else 'alert-info' }} bg-white bg-opacity-25 border-0 text-white">
+<i class="fas fa-info-circle me-2"></i>
+<strong>Status:</strong> {{ email_gap.message }}
+<br><small>Automatic processing runs every 30 minutes. Manual processing available below.</small>
+</div>
+</div>
+{% endif %}
+
+<!-- Processing Status Banner (shown during processing) -->
+<div id="processingStatusBanner" class="alert alert-info d-none mb-3">
+<div class="d-flex align-items-center">
+<div class="spinner-border spinner-border-sm me-3" role="status"></div>
+<div>
+<strong>Processing emails in background...</strong>
+<div id="processingDetails" class="small mt-1">This may take 5-10 minutes for large inboxes.</div>
+<div class="mt-2">
+<div class="progress" style="height: 6px;">
+<div id="processingProgress" class="progress-bar progress-bar-striped progress-bar-animated" 
+     role="progressbar" style="width: 0%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Processing Buttons -->
+<div class="d-flex gap-2 flex-wrap">
+<button class="btn btn-light" id="processNewBtn">
+<i class="fas fa-sync-alt me-1"></i>
+Process New Emails (24h)
+</button>
+
+{% if email_gap and email_gap.show_historical_button %}
+<button class="btn btn-outline-light" id="processHistoricalBtn">
+<i class="fas fa-history me-1"></i>
+Process Last 2 Months
+</button>
+{% else %}
+<button class="btn btn-outline-light" id="processHistoricalBtn" disabled>
+<i class="fas fa-check me-1"></i>
+Historical Processing Complete
+</button>
+{% endif %}
+
+<button class="btn btn-outline-light" id="checkStatusBtn">
+<i class="fas fa-info-circle me-1"></i>
+Check Status
+</button>
+</div>
+</div>
+
+<div class="col-md-4 text-center">
+<div class="h4 mb-1" id="processingStatusText">⚡ Active</div>
+<small>Processing Status</small>
+<div class="mt-2">
+<small id="processingSubtext">Auto-processing every 30min</small>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Enhanced Processing JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Enhanced processing controls loaded');
+    
+    let processingStartTime = null;
+    let progressInterval = null;
+    let statusCheckInterval = null;
+    
+    // Processing status management
+    function showProcessingStatus(type = 'historical') {
+        const banner = document.getElementById('processingStatusBanner');
+        const details = document.getElementById('processingDetails');
+        const statusText = document.getElementById('processingStatusText');
+        const subtext = document.getElementById('processingSubtext');
+        
+        banner.classList.remove('d-none');
+        statusText.innerHTML = '🔄 Processing';
+        subtext.innerHTML = 'Background processing active';
+        
+        if (type === 'historical') {
+            details.innerHTML = 'Processing last 2 months of emails. This may take 5-10 minutes for large inboxes.';
+        } else {
+            details.innerHTML = 'Processing new emails from last 24 hours. Should complete in 1-2 minutes.';
+        }
+        
+        processingStartTime = Date.now();
+        startProgressSimulation();
+        startStatusChecking();
+    }
+    
+    function hideProcessingStatus() {
+        const banner = document.getElementById('processingStatusBanner');
+        const statusText = document.getElementById('processingStatusText');
+        const subtext = document.getElementById('processingSubtext');
+        
+        banner.classList.add('d-none');
+        statusText.innerHTML = '⚡ Active';
+        subtext.innerHTML = 'Auto-processing every 30min';
+        
+        if (progressInterval) {
+            clearInterval(progressInterval);
+            progressInterval = null;
+        }
+        if (statusCheckInterval) {
+            clearInterval(statusCheckInterval);
+            statusCheckInterval = null;
+        }
+    }
+    
+    function startProgressSimulation() {
+        const progressBar = document.getElementById('processingProgress');
+        let progress = 0;
+        
+        progressInterval = setInterval(() => {
+            const elapsed = Date.now() - processingStartTime;
+            const minutes = elapsed / (1000 * 60);
+            
+            // Simulate progress based on time (slow start, then faster)
+            if (minutes < 1) {
+                progress = Math.min(15, minutes * 15);
+            } else if (minutes < 3) {
+                progress = Math.min(40, 15 + (minutes - 1) * 12.5);
+            } else if (minutes < 5) {
+                progress = Math.min(70, 40 + (minutes - 3) * 15);
+            } else {
+                progress = Math.min(90, 70 + (minutes - 5) * 10);
+            }
+            
+            progressBar.style.width = progress + '%';
+            
+            // Update details text
+            const details = document.getElementById('processingDetails');
+            const minutesText = Math.floor(minutes);
+            details.innerHTML = `Processing... ${minutesText} minute${minutesText !== 1 ? 's' : ''} elapsed. Large inboxes may take 5-10 minutes total.`;
+            
+        }, 5000); // Update every 5 seconds
+    }
+    
+    function startStatusChecking() {
+        // Check processing status every 30 seconds
+        statusCheckInterval = setInterval(async () => {
+            try {
+                const response = await fetch('/api/processing_status');
+                const data = await response.json();
+                
+                if (!data.is_processing) {
+                    // Processing complete
+                    hideProcessingStatus();
+                    showSuccessMessage('Processing completed! Page will refresh to show new data.');
+                    setTimeout(() => window.location.reload(), 2000);
+                }
+            } catch (error) {
+                console.log('Status check failed (normal during processing):', error);
+            }
+        }, 30000);
+    }
+    
+    function showSuccessMessage(message) {
+        // Create and show success toast
+        const toast = document.createElement('div');
+        toast.className = 'alert alert-success alert-dismissible fade show position-fixed';
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(toast);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 5000);
+    }
+    
+    // Process New Emails Button
+    const processNewBtn = document.getElementById('processNewBtn');
+    if (processNewBtn) {
+        processNewBtn.addEventListener('click', async function() {
+            console.log('Processing new emails...');
+            const btn = this;
+            const originalText = btn.innerHTML;
+            
+            // Show loading state
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing...';
+            btn.disabled = true;
+            
+            showProcessingStatus('new');
+            
+            try {
+                const response = await fetch('/api/process_emails', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                console.log('Processing response:', data);
+                
+                if (data.status === 'processing_completed') {
+                    hideProcessingStatus();
+                    showSuccessMessage(`✅ Success! Processed ${data.processed} emails (${data.new} new). Page will refresh...`);
+                    setTimeout(() => window.location.reload(), 2000);
+                } else if (data.status === 'error') {
+                    hideProcessingStatus();
+                    alert('❌ Error: ' + data.message);
+                } else {
+                    hideProcessingStatus();
+                    alert('⚠ Unexpected response: ' + JSON.stringify(data));
+                }
+            } catch (error) {
+                hideProcessingStatus();
+                console.error('Error:', error);
+                alert('❌ Network error: ' + error.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+    }
+    
+    // Process Historical Emails Button
+    const processHistoricalBtn = document.getElementById('processHistoricalBtn');
+    if (processHistoricalBtn) {
+        processHistoricalBtn.addEventListener('click', async function() {
+            if (this.disabled) return;
+            
+            const confirmed = confirm(
+                '📧 Process Last 2 Months\n\n' +
+                '• This will import emails from the last 2 months\n' +
+                '• Processing runs in the background (5-10 minutes)\n' +
+                '• You can continue using the app while it processes\n' +
+                '• Page will refresh automatically when complete\n\n' +
+                'Continue?'
+            );
+            
+            if (!confirmed) return;
+            
+            console.log('Processing historical emails...');
+            const btn = this;
+            const originalText = btn.innerHTML;
+            
+            // Show loading state
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Starting...';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/process_emails_historical', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                console.log('Historical processing response:', data);
+                
+                if (data.status === 'processing_started') {
+                    showProcessingStatus('historical');
+                    showSuccessMessage('📧 Historical processing started in background. Progress shown above.');
+                } else if (data.status === 'already_processing') {
+                    alert('⚠ Email processing is already in progress. Please wait for it to complete.');
+                } else if (data.status === 'error') {
+                    alert('❌ Error: ' + data.message);
+                } else {
+                    alert('⚠ Unexpected response: ' + JSON.stringify(data));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Network error: ' + error.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+    }
+    
+    // Check Status Button
+    const checkStatusBtn = document.getElementById('checkStatusBtn');
+    if (checkStatusBtn) {
+        checkStatusBtn.addEventListener('click', async function() {
+            try {
+                const response = await fetch('/api/processing_status');
+                const data = await response.json();
+                
+                if (data.is_processing) {
+                    showProcessingStatus('historical');
+                    showSuccessMessage('Background processing is active. Progress shown above.');
+                } else {
+                    alert('✅ No active processing. System is ready for new requests.');
+                }
+            } catch (error) {
+                alert('❌ Error checking status: ' + error.message);
+            }
+        });
+    }
+    
+    // Check if processing is already active on page load
+    setTimeout(async () => {
+        try {
+            const response = await fetch('/api/processing_status');
+            const data = await response.json();
+            if (data.is_processing) {
+                showProcessingStatus('historical');
+            }
+        } catch (error) {
+            console.log('Initial status check failed:', error);
+        }
+    }, 1000);
+});
+</script>

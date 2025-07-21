@@ -1,0 +1,185 @@
+<!-- Category and Priority Tables -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-folder me-2"></i>
+                    Category Distribution
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if category_stats %}
+                    {% set total_category_emails = category_stats|sum(attribute='count') %}
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Category</th>
+                                <th>Count</th>
+                                <th>Percentage</th>
+                                <th>Visual</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in category_stats %}
+                            <tr class="category-row">
+                                <td>
+                                    {% if stat.category == 'Critical Alerts' %}
+                                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                                    {% elif stat.category == 'New Leads' %}
+                                        <i class="fas fa-user-plus text-warning me-2"></i>
+                                    {% elif stat.category == 'Maintenance Requests' %}
+                                        <i class="fas fa-tools text-info me-2"></i>
+                                    {% elif stat.category == 'Tenant Communications' %}
+                                        <i class="fas fa-home text-secondary me-2"></i>
+                                    {% else %}
+                                        <i class="fas fa-inbox text-muted me-2"></i>
+                                    {% endif %}
+                                    {{ stat.category }}
+                                </td>
+                                <td>
+                                    {% if stat.category == 'Critical Alerts' %}
+                                        <span class="badge bg-danger">{{ stat.count }}</span>
+                                    {% elif stat.category == 'New Leads' %}
+                                        <span class="badge bg-warning">{{ stat.count }}</span>
+                                    {% elif stat.category == 'Maintenance Requests' %}
+                                        <span class="badge bg-info">{{ stat.count }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ stat.count }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>
+                                        {% if total_category_emails > 0 %}
+                                            {{ (stat.count / total_category_emails * 100)|round(1) }}%
+                                        {% else %}
+                                            0%
+                                        {% endif %}
+                                    </strong>
+                                </td>
+                                <td>
+                                    {% set percentage = (stat.count / total_category_emails * 100)|round(1) if total_category_emails > 0 else 0 %}
+                                    <div class="progress" style="height: 8px;">
+                                        {% if stat.category == 'Critical Alerts' %}
+                                            <div class="progress-bar bg-danger" style="width: {{ percentage }}%"></div>
+                                        {% elif stat.category == 'New Leads' %}
+                                            <div class="progress-bar bg-warning" style="width: {{ percentage }}%"></div>
+                                        {% elif stat.category == 'Maintenance Requests' %}
+                                            <div class="progress-bar bg-info" style="width: {{ percentage }}%"></div>
+                                        {% else %}
+                                            <div class="progress-bar bg-secondary" style="width: {{ percentage }}%"></div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th>Total</th>
+                                <th><span class="badge bg-dark">{{ total_category_emails }}</span></th>
+                                <th><strong>100%</strong></th>
+                                <th><small class="text-muted">All emails</small></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                {% else %}
+                    <div class="p-4 text-center text-muted">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>No email category data available yet.</p>
+                        <small>Process some emails to see statistics here.</small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-flag me-2"></i>
+                    Priority Levels
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if priority_stats %}
+                    {% set total_priority_emails = priority_stats|sum(attribute='count') %}
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Priority</th>
+                                <th>Count</th>
+                                <th>Percentage</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in priority_stats %}
+                            <tr>
+                                <td class="priority-{{ stat.priority.lower() }}">
+                                    {% if stat.priority == 'Critical' %}
+                                        <i class="fas fa-exclamation-circle me-2"></i>
+                                    {% elif stat.priority == 'High' %}
+                                        <i class="fas fa-arrow-up me-2"></i>
+                                    {% elif stat.priority == 'Medium' %}
+                                        <i class="fas fa-minus me-2"></i>
+                                    {% else %}
+                                        <i class="fas fa-arrow-down me-2"></i>
+                                    {% endif %}
+                                    {{ stat.priority }}
+                                </td>
+                                <td>
+                                    {% if stat.priority == 'Critical' %}
+                                        <span class="badge bg-danger">{{ stat.count }}</span>
+                                    {% elif stat.priority == 'High' %}
+                                        <span class="badge bg-warning">{{ stat.count }}</span>
+                                    {% elif stat.priority == 'Medium' %}
+                                        <span class="badge bg-info">{{ stat.count }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ stat.count }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>
+                                        {% if total_priority_emails > 0 %}
+                                            {{ (stat.count / total_priority_emails * 100)|round(1) }}%
+                                        {% else %}
+                                            0%
+                                        {% endif %}
+                                    </strong>
+                                </td>
+                                <td>
+                                    {% if stat.priority == 'Critical' %}
+                                        <small class="text-danger">⚠️ Needs immediate attention</small>
+                                    {% elif stat.priority == 'High' %}
+                                        <small class="text-warning">📋 Review within 24h</small>
+                                    {% elif stat.priority == 'Medium' %}
+                                        <small class="text-info">📌 Standard processing</small>
+                                    {% else %}
+                                        <small class="text-secondary">📝 When time permits</small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th>Total</th>
+                                <th><span class="badge bg-dark">{{ total_priority_emails }}</span></th>
+                                <th><strong>100%</strong></th>
+                                <th><small class="text-muted">All priorities</small></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                {% else %}
+                    <div class="p-4 text-center text-muted">
+                        <i class="fas fa-flag fa-3x mb-3"></i>
+                        <p>No priority data available yet.</p>
+                        <small>Process some emails to see priority distribution.</small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
