@@ -50,3 +50,28 @@ app/attachments/
 # OS
 .DS_Store
 Thumbs.db
+
+# Temporary and backup files
+*_backup*
+*.backup_*
+basic_reports_removal_*/
+backup_*/
+
+# Utility scripts (optional - remove if you want these tracked)
+concat_all_files.py
+data_migration.py
+email_status_management_plan.py
+fixed_conversation_ai_summarizer.py
+manual_syntax_fix.py
+migrate_database.py
+monitor_performance.py
+process_new_emails.py
+run_helper_bot_init.py
+scheduled_email_task.py
+view_database.py
+web_email_processor.py
+
+# Text snapshots and reports
+email_snapshot.txt
+*_report.txt
+new_reports_route.txt
